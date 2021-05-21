@@ -222,11 +222,11 @@ void reco::shower::LArPandoraModularShowerCreation::produce(art::Event& evt)
 
   int shower_iter = 0;
   //Loop of the pf particles
+  std::cout << "Number of pfps: " << pfps.size() << std::endl;
   for (auto const& pfp : pfps) {
-
+    std::cout << pfp->PdgCode() << std::endl;
     //Update the shower iterator
     showerEleHolder.SetShowerNumber(shower_iter);
-
     //loop only over showers unless otherwise specified
     if (!fUseAllParticles && pfp->PdgCode() != 11 && pfp->PdgCode() != 22)
       continue;

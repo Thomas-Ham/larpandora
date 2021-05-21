@@ -41,9 +41,39 @@ showerlinearenergy:{
 showernumelectronsenergy:{
      tool_type:  ShowerNumElectronsEnergy
      BaseTools: @local::showerbasetools
-     CalorimetryAlg: @nil
+     CalorimetryAlg: @local::sbnd_calorimetryalgmc
      RecombinationFactor: 0.64
      # PFParticleLabel: "pandora"
+     ShowerEnergyOutputLabel: "ShowerEnergy"
+     ShowerBestPlaneOutputLabel: "ShowerBestPlane"
+ }
+
+showerrecoenergyfromnumelectrons:{
+     tool_type: ShowerRecoEnergyfromNumElectrons 
+     BaseTools: @local::showerbasetools
+     CalorimetryAlg: @local::sbnd_calorimetryalgmc
+     NominalRecombinationFactor: 0.64
+     PFParticleModuleLabel: "pandora"
+     SCECorrectEField:   true
+     NominalModBoxdEdx:  3.66740184715815  # Found by plugging nominal_recombination into modbox eq (see eg https://arxiv.org/pdf/1710.00396.pdf) and calculating with                     
+                                           # Wolfran Alpha... We end up with a grim looking function of the form dEdx = k*exp(dEdx)                                                        
+                                           # and I don't know / haven't looked up how to solve this properly yet (Google "ProductLog" or "Lambert-W" function for info) 
+     ShowerEnergyfromNumElectrons: "ShowerEnergyfromNumElectrons"
+     ShowerEnergyOutputLabel: "ShowerEnergy"
+     ShowerBestPlaneOutputLabel: "ShowerBestPlane"
+ }
+
+showerrecoenergyestar:{
+     tool_type: ShowerRecoEnergyestar
+     BaseTools: @local::showerbasetools
+     CalorimetryAlg: @local::sbnd_calorimetryalgmc
+     NominalRecombinationFactor: 0.64
+     PFParticleModuleLabel: "pandora"
+     SCECorrectEField:   true
+     NominalModBoxdEdx:  3.66740184715815  # Found by plugging nominal_recombination into modbox eq (see eg https://arxiv.org/pdf/1710.00396.pdf) and calculating with                     
+                                           # Wolfran Alpha... We end up with a grim looking function of the form dEdx = k*exp(dEdx)                                                        
+                                           # and I don't know / haven't looked up how to solve this properly yet (Google "ProductLog" or "Lambert-W" function for info) 
+     ShowerEnergyestar: "ShowerEnergyestar"
      ShowerEnergyOutputLabel: "ShowerEnergy"
      ShowerBestPlaneOutputLabel: "ShowerBestPlane"
  }
@@ -252,6 +282,14 @@ showertrackfindercheater:{
     InitialTrackHitsOutputLabel: "InitialTrackHits"
     InitialTrackSpacePointsOutputLabel: "InitialTrackSpacePoints"
 }
+
+showerenergycheater:{                                                                                                                                                                   
+    tool_type:               ShowerEnergyCheater                                                                                                                                        
+    BaseTools:           @local::showerbasetools                                                                                                                                        
+    LArPandoraShowerCheatingAlg:    @local::standard_larpandorashowercheatingalg
+    PFParticleModuleLabel:  "pandora"                                                                                                                                                   
+    HitModuleLabel:         "linecluster"                                                                                                                                               
+}     
 
 showertracktrajtospacepoint:{
     tool_type: ShowerTrackTrajToSpacePoint
