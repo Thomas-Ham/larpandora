@@ -604,7 +604,7 @@ class reco::shower::ShowerElementHolder{
       const art::FindManyP<T1>& GetFindManyP(const art::ValidHandle<std::vector<T2> >& handle,
           const art::Event &evt, const art::InputTag &moduleTag){
 
-        const std::string name("FMP" + moduleTag.label() + getType<T1>() + getType<T2>());
+        const std::string name("FMP_" + moduleTag.label() + "_" + getType<T1>() + "_" + getType<T2>());
 
         if (CheckEventElement(name)){
           return GetEventElement<art::FindManyP<T1> >(name);
@@ -614,7 +614,7 @@ class reco::shower::ShowerElementHolder{
             SetEventElement(findManyP, name);
             return GetEventElement<art::FindManyP<T1> >(name);
           } else {
-            throw cet::exception("ShowerElementHolder") << "FindManyP is not valid" << std::endl;
+            throw cet::exception("ShowerElementHolder") << "FindManyP is not valid: " << name << std::endl;
           }
         }
       }
@@ -623,7 +623,7 @@ class reco::shower::ShowerElementHolder{
       const art::FindOneP<T1>& GetFindOneP(const art::ValidHandle<std::vector<T2> >& handle,
           const art::Event& evt, const art::InputTag& moduleTag){
 
-        const std::string name("FOP" + moduleTag.label() + getType<T1>() + getType<T2>());
+        const std::string name("FOP_" + moduleTag.label() + "_" + getType<T1>() + "_" + getType<T2>());
 
         if (CheckEventElement(name)){
           return GetEventElement<art::FindOneP<T1> >(name);
@@ -633,7 +633,7 @@ class reco::shower::ShowerElementHolder{
             SetEventElement(findOneP, name);
             return GetEventElement<art::FindOneP<T1> >(name);
           } else {
-            throw cet::exception("ShowerElementHolder") << "FindOneP is not valid" << std::endl;
+            throw cet::exception("ShowerElementHolder") << "FindOneP is not valid: " << name << std::endl;
           }
         }
       }

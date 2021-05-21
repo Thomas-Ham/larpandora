@@ -122,6 +122,8 @@ namespace lar_pandora {
         caloHitParameters.m_pParentAddress = (void*)((intptr_t)(++hitCounter));
         caloHitParameters.m_larTPCVolumeId =
           LArPandoraGeometry::GetVolumeID(driftVolumeMap, hit_WireID.Cryostat, hit_WireID.TPC);
+        caloHitParameters.m_daughterVolumeId = 
+          LArPandoraGeometry::GetDaughterVolumeID(driftVolumeMap, hit_WireID.Cryostat, hit_WireID.TPC);
 
         const geo::View_t pandora_GlobalView(
           LArPandoraGeometry::GetGlobalView(hit_WireID.Cryostat, hit_WireID.TPC, hit_View));

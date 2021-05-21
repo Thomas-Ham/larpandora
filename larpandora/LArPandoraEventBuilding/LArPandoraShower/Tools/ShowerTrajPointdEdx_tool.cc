@@ -136,9 +136,6 @@ namespace ShowerRecoTools{
       return 0;
     }
 
-    auto const pfpHandle = Event.getValidHandle<std::vector<recob::PFParticle> >(fPFParticleLabel);
-    const art::FindManyP<anab::T0>& fmpfpt0 = ShowerEleHolder.GetFindManyP<anab::T0>(
-        pfpHandle, Event, fPFParticleLabel);
 
     // Get the spacepoints
     auto const spHandle = Event.getValidHandle<std::vector<recob::SpacePoint> >(fPFParticleLabel);
@@ -158,6 +155,9 @@ namespace ShowerRecoTools{
 
     double pfpT0Time(0); // If no T0 found, assume the particle happened at trigger time (0)
     if (fT0Correct){
+      auto const pfpHandle = Event.getValidHandle<std::vector<recob::PFParticle> >(fPFParticleLabel);
+      const art::FindManyP<anab::T0>& fmpfpt0 = ShowerEleHolder.GetFindManyP<anab::T0>(
+          pfpHandle, Event, fPFParticleLabel);
       std::vector<art::Ptr<anab::T0> > pfpT0Vec = fmpfpt0.at(pfparticle.key());
       if (pfpT0Vec.size()==1) {
         pfpT0Time = pfpT0Vec.front()->Time();
