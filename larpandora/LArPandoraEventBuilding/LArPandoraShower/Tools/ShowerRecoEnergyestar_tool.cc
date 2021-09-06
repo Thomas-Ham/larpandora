@@ -35,6 +35,7 @@
 #include "TTree.h" 
 #include "TH1D.h" 
 #include "TGraph2D.h"
+#include "TGraph.h"
 
 //C++ Includes
 #include <iostream>
@@ -64,7 +65,7 @@ namespace ShowerRecoTools {
             std::vector<art::Ptr<recob::Hit> >& hits,
             geo::View_t& view);
     void FindLargestShower(std::vector<std::tuple<unsigned int, unsigned int, unsigned int, int, double, int>> recoenergy_largest_shower);    
-    void FindPrimaryShower(std::vector<std::tuple<unsigned int, unsigned int, unsigned int, int, double, int, unsigned int, unsigned int>> recoenergy_largest_shower);
+    void FindPrimaryShower(std::vector<std::tuple<unsigned int, unsigned int, unsigned int, int, double, std::vector<double>, int, unsigned int, unsigned int>> recoenergy_largest_shower);
 
     art::InputTag fPFParticleModuleLabel;
 
@@ -72,7 +73,7 @@ namespace ShowerRecoTools {
     detinfo::DetectorProperties const* detProp = nullptr;
     art::ServiceHandle<geo::Geometry> fGeom;
     calo::CalorimetryAlg              fCalorimetryAlg;    
-   
+
     //fcl params 
     std::string fShowerEnergyestar; 
     bool fSCECorrectEField;
@@ -81,10 +82,12 @@ namespace ShowerRecoTools {
 
     // Declare variables etc.
     double Energy                = 0;
+    std::vector<double> Hit_Energy;
     double nominal_Efield        = 0;
     double localEfield           = 0;
     double localEfield_cweighted = 0;
     
+
     unsigned int showernum = 0;
     art::SubRunNumber_t subRunN;
     art::EventNumber_t EventN;
@@ -97,8 +100,8 @@ namespace ShowerRecoTools {
 
     std::vector<std::tuple<int, double>> hit_key_EField_sp;
 
-    // vec to store subrun #, event #, shower #, # of hits and energy
-    std::vector<std::tuple<unsigned int, unsigned int, unsigned int, int, double, int, unsigned int, unsigned int>> n_hit_energy; // more useful when making plots
+    // vec to store subrun #, event #, shower #, # of hits, energy, hit energy, pdg code, Total, PFPs, this PFP
+    std::vector<std::tuple<unsigned int, unsigned int, unsigned int, int, double, std::vector<double>, int, unsigned int, unsigned int>> n_hit_energy; // more useful when making plots
 
     bool write_to_file = false;
     std::string File_name = "Energy_files/Cathode_sample_SCE.root"; // The file to write to
@@ -112,6 +115,7 @@ namespace ShowerRecoTools {
     int n_no_space_points = 0;
 
     // Read in estar lookup curve
+    //TFile *estar = new TFile("/sbnd/app/users/tham/estar/estar_lookup_curve_wo_density.root");
     TFile *estar = new TFile("/sbnd/app/users/tham/estar/estar_lookup_curve_wo_density.root");
     TGraph2D *t_estar = (TGraph2D*)estar->Get("g");
 
@@ -140,8 +144,9 @@ namespace ShowerRecoTools {
             fOutputTree->Branch("Event", &EventN, "Event/i");
             fOutputTree->Branch("ShowerN", &showernum, "ShowerN/i");
             fOutputTree->Branch("NHits", &hitsize, "NHits/I");
-            fOutputTree->Branch("SPHits_temp", &SP_hits_temp, "SPHits_temp/I");
             fOutputTree->Branch("Energy", &Energy, "Event/d");
+            fOutputTree->Branch("Hit_Energy", &Hit_Energy);
+            fOutputTree->Branch("PDGcode", &pdgcode, "PDGcode/I");
             fOutputTree->Branch("Total_Event_PFPs", &total_event_pfps, "total_event_pfps/I");
             fOutputTree->Branch("This_PFP", &this_pfp, "This_PFP/I");
    //   }
@@ -185,7 +190,6 @@ namespace ShowerRecoTools {
 
     // get event number 
     EventN = Event.id().event();
-
 
     //std::cout << pfparticle->Self() << std::endl;
     std::cout << "subrun: " << subRunN << "  showernum: " << showernum << "  Event: " << EventN << std::endl;
@@ -344,7 +348,7 @@ namespace ShowerRecoTools {
         //if(write_to_file){
             fOutputTree->Fill();
         //}
-        n_hit_energy.push_back(std::make_tuple(subRunN, EventN, showernum, hitsize, Energy, pdgcode, total_event_pfps, this_pfp)); //save info for collection plane
+        n_hit_energy.push_back(std::make_tuple(subRunN, EventN, showernum, hitsize, Energy, Hit_Energy, pdgcode, total_event_pfps, this_pfp)); //save info for collection plane
         }
 
     }
@@ -370,8 +374,8 @@ namespace ShowerRecoTools {
                     }
                 }
                 std::cout << SP_hits_temp << std::endl;
-                n_hit_energy.push_back(std::make_tuple(subRunN ,EventN, showernum, hitsize, Energy, pdgcode, total_event_pfps, this_pfp)); //save info for collection plane
-                fOutputTree->Fill();
+                //n_hit_energy.push_back(std::make_tuple(subRunN ,EventN, showernum, hitsize, Energy, Hit_Energy, pdgcode, total_event_pfps, this_pfp)); //save info for collection plane
+                //fOutputTree->Fill();
             }
             }  
         } 
@@ -381,8 +385,8 @@ namespace ShowerRecoTools {
             // if there's no calculation, set the energy to -999.
             Energy = -999;
             if(plane == 2){
-                n_hit_energy.push_back(std::make_tuple(subRunN, EventN, showernum, hitsize, Energy, pdgcode, total_event_pfps, this_pfp)); //save info for collection plane
-                fOutputTree->Fill();
+                //n_hit_energy.push_back(std::make_tuple(subRunN, EventN, showernum, hitsize, Energy, Hit_Energy, pdgcode, total_event_pfps, this_pfp)); //save info for collection plane
+                //fOutputTree->Fill();
             }
         }              	
   
@@ -406,12 +410,13 @@ double ShowerRecoEnergyestar::CalculateEnergy(const detinfo::DetectorClocksData&
  
     double totalCharge = 0;
     double totalEnergy = 0;
-    double totalEnergy2 = 0;
     double nElectrons = 0;
-    
+   
+    double total_electrons = 0; 
     double efield = 0; 
-    double energy_fit = 0;
-    
+    //double energy_fit = 0;
+   
+    Hit_Energy.clear(); 
     // Loop over the hits
     for(auto const& h : hits){
         //std::cout << h.key() << std::endl; 
@@ -444,22 +449,25 @@ double ShowerRecoEnergyestar::CalculateEnergy(const detinfo::DetectorClocksData&
     //std::cout << "Using recombination factor of: " << recombination << std::endl;
     totalCharge = (h)->Integral() * fCalorimetryAlg.LifetimeCorrection(clockData, detProp, (h)->PeakTime()); // obtain charge and correct for lifetime and recombination
     nElectrons = fCalorimetryAlg.ElectronsFromADCArea(totalCharge, view);
-   // std::cout << nElectrons << "        " << t_estar->Interpolate(nElectrons, efield) << std::endl;
+    total_electrons += fCalorimetryAlg.ElectronsFromADCArea(totalCharge, view);
+    //std::cout << nElectrons << "        " << std::endl; //t_estar->Interpolate(nElectrons, efield) << std::endl;
     totalEnergy += t_estar->Interpolate(nElectrons, efield);
-    totalEnergy2 += t_estar->Interpolate(nElectrons, 0.5);
-    //std::cout << "efield: " << efield << std::endl; 
-    energy_fit += 0.0331242 + (3.28497e-05 * nElectrons) - (0.0428227 * efield);
-    }
-  
-    // Fit method
-    std::cout << "energy no_corr: " << totalEnergy2 << std::endl;
+    //std::cout << "hit_energy: " << t_estar->Interpolate(nElectrons, efield) << std::endl; 
+    //energy_fit += -0.0503288 + (3.37871e-05 * nElectrons);
+    //totalEnergy += (0.0117063 + (3.2847e-05 * nElectrons));
+    //totalEnergy += t_estar->Eval(nElectrons);
+    Hit_Energy.push_back(t_estar->Interpolate(nElectrons, efield));
+    //std::cout << "hit_energy: " << t_estar->Interpolate(nElectrons, efield) << std::endl;
+    //Hit_Energy.push_back(0.0117063 + (3.2847e-05 * nElectrons));
 
+    }
+    std::cout << "EField: " << efield << std::endl;
     return totalEnergy;
  
 }
 
 // Function to cut events where we have > 1 'major' shower
-void ShowerRecoEnergyestar::FindPrimaryShower(std::vector<std::tuple<unsigned int, unsigned int, unsigned int, int, double, int, unsigned int, unsigned int>> recoenergy_largest_shower){
+void ShowerRecoEnergyestar::FindPrimaryShower(std::vector<std::tuple<unsigned int, unsigned int, unsigned int, int, double, std::vector<double>, int, unsigned int, unsigned int>> recoenergy_largest_shower){
 /*
     std::vector<std::tuple<unsigned int, unsigned int>> multiple_shower_vec;
     for(unsigned int i = 0; i < recoenergy_largest_shower.size(); i++){
@@ -511,6 +519,7 @@ void ShowerRecoEnergyestar::FindPrimaryShower(std::vector<std::tuple<unsigned in
     recoenergy_cut->Branch("NHits", &hitsize, "NHits/I");                                                     
    // recoenergy_LS->Branch("SPHits_temp", &SP_hits_temp, "SPHits_temp/I");                                                     
     recoenergy_cut->Branch("Energy", &Energy, "Energy/d"); 
+    recoenergy_cut->Branch("Hit_Energy", &Hit_Energy); 
     recoenergy_cut->Branch("pdgcode", &pdgcode, "pdgcode/i"); 
     recoenergy_cut->Branch("TotalEventPFPs", &total_event_pfps, "total_event_pfps/i"); 
     recoenergy_cut->Branch("This_PFP", &this_pfp, "this_pfp/i"); 
@@ -521,9 +530,10 @@ void ShowerRecoEnergyestar::FindPrimaryShower(std::vector<std::tuple<unsigned in
         showernum        = std::get<2>(recoenergy_largest_shower[i]);
         hitsize          = std::get<3>(recoenergy_largest_shower[i]);
         Energy           = std::get<4>(recoenergy_largest_shower[i]);
-        pdgcode          = std::get<5>(recoenergy_largest_shower[i]);
-        total_event_pfps = std::get<6>(recoenergy_largest_shower[i]);
-        this_pfp         = std::get<7>(recoenergy_largest_shower[i]);
+        Hit_Energy       = std::get<5>(recoenergy_largest_shower[i]);
+        pdgcode          = std::get<6>(recoenergy_largest_shower[i]);
+        total_event_pfps = std::get<7>(recoenergy_largest_shower[i]);
+        this_pfp         = std::get<8>(recoenergy_largest_shower[i]);
 
         recoenergy_cut->Fill();
     }
@@ -566,6 +576,7 @@ void ShowerRecoEnergyestar::FindPrimaryShower(std::vector<std::tuple<unsigned in
     recoenergy_LS->Branch("NHits", &hitsize, "NHits/i");                                                     
    // recoenergy_LS->Branch("SPHits_temp", &SP_hits_temp, "SPHits_temp/I");                                                     
     recoenergy_LS->Branch("Energy", &Energy, "Energy/d"); 
+    recoenergy_LS->Branch("Hit_Energy", &Hit_Energy); 
     recoenergy_LS->Branch("PDGcode", &pdgcode, "PDGcode/I"); 
     recoenergy_LS->Branch("TotalEventPFPs", &total_event_pfps, "total_event_pfps/i"); 
     recoenergy_LS->Branch("This_PFP", &this_pfp, "this_pfp/i"); 
@@ -576,9 +587,10 @@ void ShowerRecoEnergyestar::FindPrimaryShower(std::vector<std::tuple<unsigned in
         showernum        = std::get<2>(recoenergy_largest_shower[i]);
         hitsize          = std::get<3>(recoenergy_largest_shower[i]);
         Energy           = std::get<4>(recoenergy_largest_shower[i]);
-        pdgcode          = std::get<5>(recoenergy_largest_shower[i]);
-        total_event_pfps = std::get<6>(recoenergy_largest_shower[i]);
-        this_pfp         = std::get<7>(recoenergy_largest_shower[i]);
+        Hit_Energy       = std::get<5>(recoenergy_largest_shower[i]);
+        pdgcode          = std::get<6>(recoenergy_largest_shower[i]);
+        total_event_pfps = std::get<7>(recoenergy_largest_shower[i]);
+        this_pfp         = std::get<8>(recoenergy_largest_shower[i]);
 
         recoenergy_LS->Fill();
     }

@@ -67,7 +67,7 @@ namespace ShowerRecoTools {
             std::vector<art::Ptr<recob::Hit> >& hits,
             geo::View_t& view);
     double ModBoxRecombination(const detinfo::DetectorPropertiesData& detProp, double EField);
-    void FindLargestShower(std::vector<std::tuple<unsigned int, unsigned int, unsigned int, int, double, double>> recoenergy_largest_shower);    
+    void FindLargestShower(std::vector<std::tuple<unsigned int, unsigned int, unsigned int, int, std::vector<double>, std::vector<int>, double, double>> recoenergy_largest_shower);    
  
     art::InputTag fPFParticleModuleLabel;
 
@@ -93,13 +93,15 @@ namespace ShowerRecoTools {
     art::SubRunNumber_t subRunN;
     art::EventNumber_t EventN;
     int hitsize;
+    std::vector<double> hit_energy;
     int SP_hits;
     int SP_hits_temp;
+    std::vector<int> hits_key;
 
     std::vector<std::tuple<int, double>> hit_key_EField_sp;
 
     // vec to store subrun #, event #, shower #, # of hits and energy
-    std::vector<std::tuple<unsigned int, unsigned int, unsigned int, int, double, double>> n_hit_energy; // more useful when making plots
+    std::vector<std::tuple<unsigned int, unsigned int, unsigned int, int, std::vector<double>, std::vector<int>, double, double>> n_hit_energy; // more useful when making plots
 
     bool write_to_file = false;
     std::string File_name = "Energy_files/Cathode_sample_SCE.root"; // The file to write to
@@ -131,14 +133,17 @@ namespace ShowerRecoTools {
             // The TFileService lets us define a tree and takes care of writing it to file
      //       m_file      = new TFile(File_name.c_str(), "UPDATE"); 
             fOutputTree = tfs->make<TTree>(Tree_name.c_str(),Tree_name.c_str());
-
+           
             //add branches                                                                          
             fOutputTree->Branch("Subrun", &subRunN, "Subrun/i");
             fOutputTree->Branch("Event", &EventN, "Event/i");
             fOutputTree->Branch("ShowerN", &showernum, "ShowerN/i");
             fOutputTree->Branch("NHits", &hitsize, "NHits/I");
+            fOutputTree->Branch("Hit_Energy", &hit_energy);
+            //fOutputTree->Branch("Hits_key", &hits_key, TString::Format("Hits_key/I"));
+            fOutputTree->Branch("Hits_key", &hits_key);
             fOutputTree->Branch("SPHits_temp", &SP_hits_temp, "SPHits_temp/I");
-            fOutputTree->Branch("Energy", &Energy, "Eventd");
+            fOutputTree->Branch("Energy", &Energy, "Energy/d");
    //   }
     }
 
@@ -182,6 +187,9 @@ namespace ShowerRecoTools {
     //ShowerEleHolder.PrintElements();
     // Get the number of planes
     unsigned int numPlanes = fGeom->Nplanes();
+
+    // make sure vector is empty
+    hits_key.clear();
 
     //Holder for the final product
     std::vector<double> ShowerRecoEnergyfromNumElectrons(numPlanes, -999);
@@ -326,9 +334,10 @@ namespace ShowerRecoTools {
         ShowerEleHolder.SetElement(ShowerRecoEnergyfromNumElectrons,ShowerRecoEnergyfromNumElectronsError,fShowerEnergyfromNumElectrons);
         if(view == 2){   
         //if(write_to_file){
+           
             fOutputTree->Fill();
         //}
-        n_hit_energy.push_back(std::make_tuple(subRunN, EventN, showernum, hitsize, Energy, recombination_shower)); //save info for collection plane
+        n_hit_energy.push_back(std::make_tuple(subRunN, EventN, showernum, hitsize, hit_energy, hits_key, Energy, recombination_shower)); //save info for collection plane
         }
 
     }
@@ -355,8 +364,8 @@ namespace ShowerRecoTools {
                     }
                 }
                 std::cout << SP_hits_temp << std::endl;
-                n_hit_energy.push_back(std::make_tuple(subRunN ,EventN, showernum, hitsize, Energy, recombination_shower)); //save info for collection plane
-                fOutputTree->Fill();
+                //n_hit_energy.push_back(std::make_tuple(subRunN ,EventN, showernum, hitsize, hits_key, Energy, recombination_shower)); //save info for collection plane
+                //fOutputTree->Fill();
             }
             }  
         } 
@@ -367,8 +376,8 @@ namespace ShowerRecoTools {
             Energy = -999;
             recombination_shower = -990;
             if(plane == 2){
-                n_hit_energy.push_back(std::make_tuple(subRunN, EventN, showernum, hitsize, Energy, recombination_shower)); //save info for collection plane
-                fOutputTree->Fill();
+                //n_hit_energy.push_back(std::make_tuple(subRunN, EventN, showernum, hitsize, hits_key, Energy, recombination_shower)); //save info for collection plane
+                //fOutputTree->Fill();
             }
         }              	
   
@@ -398,13 +407,15 @@ double ShowerRecoEnergyfromNumElectrons::CalculateEnergy(const detinfo::Detector
     double recombination = 0;
     recombination_shower = 0;
     
-
+    hit_energy.clear();
     // double A = 0.8;
     // double nominal_k_dEdx = ((A / fNominalRecombinationFactor) - 1) * nominal_Efield; // Birk's method, see https://arxiv.org/pdf/1306.1712.pdf
 
     // Loop over the hits
     for(auto const& h : hits){
-        //std::cout << h.key() << std::endl; 
+        if(view == 2){
+            hits_key.push_back(h.key());
+        }
         if(fSCECorrectEField){
             auto it = std::find_if(hit_key_EField_sp.begin(), hit_key_EField_sp.end(), [&](const std::tuple<unsigned int, double>& e){
                 return std::get<0>(e) == h.key();
@@ -427,13 +438,20 @@ double ShowerRecoEnergyfromNumElectrons::CalculateEnergy(const detinfo::Detector
         }
 
         else{
-            recombination = fNominalRecombinationFactor;
+            //recombination = fNominalRecombinationFactor;
+            recombination = 0.72;
             //std::cout << "Using the nominal Efield of " << nominal_Efield << "kV/cm and the nominal recombination factor of " << recombination << "." << std::endl;
         }
-
+    std::cout << "util::kGeVToElectrons: " << util::kGeVToElectrons << std::endl;
     //std::cout << "Using recombination factor of: " << recombination << std::endl;
-    totalCharge += (h)->Integral() * fCalorimetryAlg.LifetimeCorrection(clockData, detProp, (h)->PeakTime()) / recombination; // obtain charge and correct for lifetime and recombination
-    totalCharge2 += (h)->Integral() * fCalorimetryAlg.LifetimeCorrection(clockData, detProp, (h)->PeakTime()) / 0.64; // obtain charge and correct for lifetime and recombination
+    totalCharge = (h)->Integral() * fCalorimetryAlg.LifetimeCorrection(clockData, detProp, (h)->PeakTime()) / recombination; // obtain charge and correct for lifetime and recombination
+    totalCharge2 = (h)->Integral() * fCalorimetryAlg.LifetimeCorrection(clockData, detProp, (h)->PeakTime()) / 0.64; // obtain charge and correct for lifetime and recombination
+    nElectrons = fCalorimetryAlg.ElectronsFromADCArea(totalCharge, view);
+    nElectrons2 = fCalorimetryAlg.ElectronsFromADCArea(totalCharge2, view);
+    totalEnergy += (nElectrons / util::kGeVToElectrons) * 1000; // energy in MeV
+    hit_energy.push_back((nElectrons / util::kGeVToElectrons) * 1000);
+    std::cout << "hit energy: " << (nElectrons / util::kGeVToElectrons) * 1000 << std::endl;
+    
     if(showernum == 0){
         recombination_hit_hist->Fill(recombination);
     }
@@ -458,10 +476,6 @@ double ShowerRecoEnergyfromNumElectrons::CalculateEnergy(const detinfo::Detector
     }
 */
     // calculate # of electrons and the corresponding energy
-    nElectrons = fCalorimetryAlg.ElectronsFromADCArea(totalCharge, view);
-    nElectrons2 = fCalorimetryAlg.ElectronsFromADCArea(totalCharge2, view);
-    std::cout << nElectrons << "        " << nElectrons2 << std::endl;
-    totalEnergy = (nElectrons / util::kGeVToElectrons) * 1000; // energy in MeV
     std::cout << "totalenergy2: " << (nElectrons2 / util::kGeVToElectrons) * 1000 << std::endl;
     return totalEnergy;
  
@@ -480,7 +494,7 @@ double ShowerRecoEnergyfromNumElectrons::ModBoxRecombination(const detinfo::Dete
 }
 
 // Function to find only the largest shower
-void ShowerRecoEnergyfromNumElectrons::FindLargestShower(std::vector<std::tuple<unsigned int, unsigned int, unsigned int, int, double, double>> recoenergy_largest_shower){
+void ShowerRecoEnergyfromNumElectrons::FindLargestShower(std::vector<std::tuple<unsigned int, unsigned int, unsigned int, int, std::vector<double>, std::vector<int>, double, double>> recoenergy_largest_shower){
     // Cut showers so we are only left with the biggest (most hits) from each event.
     // Feel like there should be a more ROOT-y way to do this...
     unsigned int i = 0;                                                                 
@@ -512,6 +526,8 @@ void ShowerRecoEnergyfromNumElectrons::FindLargestShower(std::vector<std::tuple<
     recoenergy_LS->Branch("Event", &EventN, "Event/i");    
     recoenergy_LS->Branch("ShowerN", &showernum, "ShowerN/i");
     recoenergy_LS->Branch("NHits", &hitsize, "NHits/I");                                                     
+    recoenergy_LS->Branch("Hit_Energy", &hit_energy);                                                     
+    recoenergy_LS->Branch("Hits_key", &hits_key);                                                     
    // recoenergy_LS->Branch("SPHits_temp", &SP_hits_temp, "SPHits_temp/I");                                                     
     recoenergy_LS->Branch("Energy", &Energy, "Energy/d"); 
     recoenergy_LS->Branch("recombination_shower", &recombination_shower, "recombination_shower/d"); 
@@ -521,8 +537,10 @@ void ShowerRecoEnergyfromNumElectrons::FindLargestShower(std::vector<std::tuple<
         EventN    = std::get<1>(recoenergy_largest_shower[i]);
         showernum = std::get<2>(recoenergy_largest_shower[i]);
         hitsize   = std::get<3>(recoenergy_largest_shower[i]);
-        Energy    = std::get<4>(recoenergy_largest_shower[i]);
-        recombination_shower    = std::get<5>(recoenergy_largest_shower[i]);
+        hit_energy= std::get<4>(recoenergy_largest_shower[i]);
+        hits_key  = std::get<5>(recoenergy_largest_shower[i]);
+        Energy    = std::get<6>(recoenergy_largest_shower[i]);
+        recombination_shower    = std::get<7>(recoenergy_largest_shower[i]);
         //SP_hits_temp   = std::get<5>(recoenergy_largest_shower[i]);
 
         recoenergy_LS->Fill();
