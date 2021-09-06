@@ -48,6 +48,17 @@ showernumelectronsenergy:{
      ShowerBestPlaneOutputLabel: "ShowerBestPlane"
  }
 
+showerestarenergy:{
+     tool_type:  ShowerESTAREnergy
+     BaseTools: @local::showerbasetools
+     CalorimetryAlg: @local::sbnd_calorimetryalgmc
+     # PFParticleLabel: "pandora"
+     ShowerEnergyOutputLabel: "ShowerEnergy"
+     ShowerBestPlaneOutputLabel: "ShowerBestPlane"
+     SCECorrectEField: false
+     ESTARLookupCurve: "/sbnd/app/users/tham/estar/ESTAREnergyLookupCurve.root"
+     ESTARTGraph:      "ESTAR_energy_lookup_curve"
+}
 
 shower2Dlinearregressiontrackhitfinder:{
     tool_type:             Shower2DLinearRegressionTrackHitFinder
