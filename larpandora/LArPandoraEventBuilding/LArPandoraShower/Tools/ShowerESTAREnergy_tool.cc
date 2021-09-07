@@ -54,19 +54,14 @@ namespace ShowerRecoTools {
   std::string fShowerEnergyOutputLabel;
   std::string fShowerBestPlaneOutputLabel; 
   bool fSCECorrectEField;
-  std::string fESTARLookupCurve;
-  std::string fESTARTGraph;
-
-  // Read in the ESTAR lookup curve
-  // Need to change this once the lookup curve has been committed to sbnd_data
-  TFile *estar = new TFile(fESTARLookupCurve.c_str());
-  TGraph2D *t_estar = (TGraph2D*)estar->Get(fESTARTGraph.c_str());
 
   double nominal_Efield = 0;         // Nominal E-field in the detector
   double localEfield = 0;            // Local E-field at the geometric centre of the shower 
   double localEfield_cweighted = 0;  // Local E-field at the charge weighted centre of the shower
 
   std::vector<std::tuple<int, double>> sp_hits_tuple; // tuple holding the key and local E-field for all the sp hits 
+
+  TGraph2D *t_estar;
 
   }; // class
 
@@ -77,10 +72,29 @@ namespace ShowerRecoTools {
     fCalorimetryAlg(pset.get<fhicl::ParameterSet>("CalorimetryAlg")),
     fShowerEnergyOutputLabel(pset.get<std::string>("ShowerEnergyOutputLabel")),
     fShowerBestPlaneOutputLabel(pset.get<std::string>("ShowerBestPlaneOutputLabel")),
-    fSCECorrectEField(pset.get<bool>("SCECorrectEField")),
-    fESTARLookupCurve(pset.get<std::string>("ESTARLookupCurve")),
-    fESTARTGraph(pset.get<std::string>("ESTARTGraph"))
+    fSCECorrectEField(pset.get<bool>("SCECorrectEField"))
   {
+
+    //Get the ESTAR lookup curve file name
+    std::string fname;
+    cet::search_path sp("FW_SEARCH_PATH");
+    auto ESTARPath = pset.get<std::string>("ESTARFname");
+    if (!sp.find_file(ESTARPath, fname)) {
+      throw cet::exception("ShowerESTAREnergy") << "Could not find the ESTAR lookup curve file.";
+    }
+
+    std::string ESTAR_TGraph_name = pset.get<std::string>("ESTARTGraph");
+
+    TFile fin(fname.c_str(), "READ");
+    if (!fin.IsOpen()) {
+      throw cet::exception("ShowerESTAREnergy") << "Could not read the ESTAR file. Stopping";
+    }
+
+    // Get the TGraph.
+    t_estar = dynamic_cast<TGraph2D*>(fin.Get(ESTAR_TGraph_name.c_str()));
+    if(!t_estar){
+      throw cet::exception("ShowerESTAREnergy") << "Could not read the ESTAR TGraph";
+    }
   }
 
   ShowerESTAREnergy::~ShowerESTAREnergy()
