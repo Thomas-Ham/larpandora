@@ -1,6 +1,6 @@
 //############################################################################
 //### Name:        ShowerESTAREnergy                                       ###
-//### Author:      Tom Ham			                                           ###
+//### Author:      Tom Ham                                                 ###
 //### Date:        06/09/2021                                              ###
 //### Description: Tool for finding the energy of a shower by using        ###
 //###              the ESTAR database.                                     ###

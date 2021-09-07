@@ -51,7 +51,7 @@ showernumelectronsenergy:{
 showerestarenergy:{
      tool_type:  ShowerESTAREnergy
      BaseTools: @local::showerbasetools
-     CalorimetryAlg: @local::sbnd_calorimetryalgmc
+     CalorimetryAlg: @nil
      # PFParticleLabel: "pandora"
      ShowerEnergyOutputLabel: "ShowerEnergy"
      ShowerBestPlaneOutputLabel: "ShowerBestPlane"
