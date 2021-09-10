@@ -56,8 +56,8 @@ showerestarenergy:{
      ShowerEnergyOutputLabel: "ShowerEnergy"
      ShowerBestPlaneOutputLabel: "ShowerBestPlane"
      SCECorrectEField: false
-     ESTARFname: "ShowerEnergyReco/ESTAREnergyLookupCurve.root"
-     ESTARTGraph: "ESTAR_energy_lookup_curve"
+     ESTARFname: @nil
+     ESTARTGraph: @nil
 }
 
 shower2Dlinearregressiontrackhitfinder:{
