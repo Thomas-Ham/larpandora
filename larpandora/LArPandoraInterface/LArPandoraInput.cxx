@@ -28,10 +28,11 @@
 #include "Plugins/LArTransformationPlugin.h"
 
 #include "larpandoracontent/LArObjects/LArCaloHit.h"
-#include "larpandoracontent/LArObjects/LArMCParticle.h"
 
 #include "larpandora/LArPandoraInterface/ILArPandora.h"
 #include "larpandora/LArPandoraInterface/LArPandoraInput.h"
+
+#include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include <limits>
 
@@ -122,8 +123,8 @@ namespace lar_pandora {
         caloHitParameters.m_pParentAddress = (void*)((intptr_t)(++hitCounter));
         caloHitParameters.m_larTPCVolumeId =
           LArPandoraGeometry::GetVolumeID(driftVolumeMap, hit_WireID.Cryostat, hit_WireID.TPC);
-        caloHitParameters.m_daughterVolumeId = 
-          LArPandoraGeometry::GetDaughterVolumeID(driftVolumeMap, hit_WireID.Cryostat, hit_WireID.TPC);
+        caloHitParameters.m_daughterVolumeId = LArPandoraGeometry::GetDaughterVolumeID(
+          driftVolumeMap, hit_WireID.Cryostat, hit_WireID.TPC);
 
         const geo::View_t pandora_GlobalView(
           LArPandoraGeometry::GetGlobalView(hit_WireID.Cryostat, hit_WireID.TPC, hit_View));
@@ -540,6 +541,7 @@ namespace lar_pandora {
 
         try {
           mcParticleParameters.m_nuanceCode = neutrino.InteractionType();
+          mcParticleParameters.m_process = lar_content::MC_PROC_INCIDENT_NU;
           mcParticleParameters.m_energy = neutrino.Nu().E();
           mcParticleParameters.m_momentum =
             pandora::CartesianVector(neutrino.Nu().Px(), neutrino.Nu().Py(), neutrino.Nu().Pz());
@@ -670,7 +672,17 @@ namespace lar_pandora {
       lar_content::LArMCParticleParameters mcParticleParameters;
 
       try {
+        MCProcessMap processMap;
+        FillMCProcessMap(processMap);
         mcParticleParameters.m_nuanceCode = nuanceCode;
+        if (processMap.find(particle->Process()) != processMap.end()) {
+          mcParticleParameters.m_process = processMap[particle->Process()];
+        }
+        else {
+          mcParticleParameters.m_process = lar_content::MC_PROC_UNKNOWN;
+          mf::LogWarning("LArPandora")
+            << "CreatePandoraMCParticles - found an unknown process" << std::endl;
+        }
         mcParticleParameters.m_energy = E;
         mcParticleParameters.m_particleId = particle->PdgCode();
         mcParticleParameters.m_momentum = pandora::CartesianVector(pX, pY, pZ);
@@ -929,12 +941,69 @@ namespace lar_pandora {
   }
 
   //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void
+  LArPandoraInput::FillMCProcessMap(MCProcessMap& processMap)
+  {
+    // QGSP_BERT and EM standard physics list mappings
+    processMap["unknown"] = lar_content::MC_PROC_UNKNOWN;
+    processMap["primary"] = lar_content::MC_PROC_PRIMARY;
+    processMap["compt"] = lar_content::MC_PROC_COMPT;
+    processMap["phot"] = lar_content::MC_PROC_PHOT;
+    processMap["annihil"] = lar_content::MC_PROC_ANNIHIL;
+    processMap["eIoni"] = lar_content::MC_PROC_E_IONI;
+    processMap["eBrem"] = lar_content::MC_PROC_E_BREM;
+    processMap["conv"] = lar_content::MC_PROC_CONV;
+    processMap["muIoni"] = lar_content::MC_PROC_MU_IONI;
+    processMap["muMinusCaptureAtRest"] = lar_content::MC_PROC_MU_MINUS_CAPTURE_AT_REST;
+    processMap["neutronInelastic"] = lar_content::MC_PROC_NEUTRON_INELASTIC;
+    processMap["nCapture"] = lar_content::MC_PROC_N_CAPTURE;
+    processMap["hadElastic"] = lar_content::MC_PROC_HAD_ELASTIC;
+    processMap["Decay"] = lar_content::MC_PROC_DECAY;
+    processMap["CoulombScat"] = lar_content::MC_PROC_COULOMB_SCAT;
+    processMap["muBrems"] = lar_content::MC_PROC_MU_BREM;
+    processMap["muPairProd"] = lar_content::MC_PROC_MU_PAIR_PROD;
+    processMap["PhotonInelastic"] = lar_content::MC_PROC_PHOTON_INELASTIC;
+    processMap["hIoni"] = lar_content::MC_PROC_HAD_IONI;
+    processMap["protonInelastic"] = lar_content::MC_PROC_PROTON_INELASTIC;
+    processMap["pi+Inelastic"] = lar_content::MC_PROC_PI_PLUS_INELASTIC;
+    processMap["CHIPSNuclearCaptureAtRest"] = lar_content::MC_PROC_CHIPS_NUCLEAR_CAPTURE_AT_REST;
+    processMap["pi-Inelastic"] = lar_content::MC_PROC_PI_MINUS_INELASTIC;
+    processMap["Transportation"] = lar_content::MC_PROC_TRANSPORTATION;
+    processMap["Rayl"] = lar_content::MC_PROC_RAYLEIGH;
+    processMap["hBrems"] = lar_content::MC_PROC_HAD_BREM;
+    processMap["hPairProd"] = lar_content::MC_PROC_HAD_PAIR_PROD;
+    processMap["ionIoni"] = lar_content::MC_PROC_ION_IONI;
+    processMap["nKiller"] = lar_content::MC_PROC_NEUTRON_KILLER;
+    processMap["ionInelastic"] = lar_content::MC_PROC_ION_INELASTIC;
+    processMap["He3Inelastic"] = lar_content::MC_PROC_HE3_INELASTIC;
+    processMap["alphaInelastic"] = lar_content::MC_PROC_ALPHA_INELASTIC;
+    processMap["anti_He3Inelastic"] = lar_content::MC_PROC_ANTI_HE3_INELASTIC;
+    processMap["anti_alphaInelastic"] = lar_content::MC_PROC_ANTI_ALPHA_INELASTIC;
+    processMap["hFritiofCaptureAtRest"] = lar_content::MC_PROC_HAD_FRITIOF_CAPTURE_AT_REST;
+    processMap["anti_deuteronInelastic"] = lar_content::MC_PROC_ANTI_DEUTERON_INELASTIC;
+    processMap["anti_neutronInelastic"] = lar_content::MC_PROC_ANTI_NEUTRON_INELASTIC;
+    processMap["anti_protonInelastic"] = lar_content::MC_PROC_ANTI_PROTON_INELASTIC;
+    processMap["anti_tritonInelastic"] = lar_content::MC_PROC_ANTI_TRITON_INELASTIC;
+    processMap["dInelastic"] = lar_content::MC_PROC_DEUTERON_INELASTIC;
+    processMap["electronNuclear"] = lar_content::MC_PROC_ELECTRON_NUCLEAR;
+    processMap["photonNuclear"] = lar_content::MC_PROC_PHOTON_NUCLEAR;
+    processMap["kaon+Inelastic"] = lar_content::MC_PROC_KAON_PLUS_INELASTIC;
+    processMap["kaon-Inelastic"] = lar_content::MC_PROC_KAON_MINUS_INELASTIC;
+    processMap["hBertiniCaptureAtRest"] = lar_content::MC_PROC_HAD_BERTINI_CAPTURE_AT_REST;
+    processMap["lambdaInelastic"] = lar_content::MC_PROC_LAMBDA_INELASTIC;
+    processMap["muonNuclear"] = lar_content::MC_PROC_MU_NUCLEAR;
+    processMap["tInelastic"] = lar_content::MC_PROC_TRITON_INELASTIC;
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   LArPandoraInput::Settings::Settings()
     : m_pPrimaryPandora(nullptr)
     , m_useHitWidths(true)
     , m_useBirksCorrection(false)
+    , m_useActiveBoundingBox(false)
     , m_uidOffset(100000000)
     , m_hitCounterOffset(0)
     , m_dx_cm(0.5)

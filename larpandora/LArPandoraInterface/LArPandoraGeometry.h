@@ -102,9 +102,14 @@ namespace lar_pandora {
      *  @param  widthY           width of tpc volume (Y)
      *  @param  widthZ           width of tpc volume (Z)
      */
-    LArDaughterDriftVolume(const unsigned int cryostat, const unsigned int tpc,
-                           const float centerX, const float centerY, const float centerZ,
-                           const float widthX, const float widthY, const float widthZ);
+    LArDaughterDriftVolume(const unsigned int cryostat,
+                           const unsigned int tpc,
+                           const float centerX,
+                           const float centerY,
+                           const float centerZ,
+                           const float widthX,
+                           const float widthY,
+                           const float widthZ);
 
     /**
      *  @brief  Return cryostat ID
@@ -146,16 +151,16 @@ namespace lar_pandora {
      */
     float GetWidthZ() const;
 
-private:
-    unsigned int    m_cryostat;
-    unsigned int    m_tpc;
-    float           m_centerX;
-    float           m_centerY;
-    float           m_centerZ;
-    float           m_widthX;
-    float           m_widthY;
-    float           m_widthZ;
-};
+  private:
+    unsigned int m_cryostat;
+    unsigned int m_tpc;
+    float m_centerX;
+    float m_centerY;
+    float m_centerZ;
+    float m_widthX;
+    float m_widthY;
+    float m_widthZ;
+  };
 
   typedef std::vector<LArDaughterDriftVolume> LArDaughterDriftVolumeList;
 
@@ -321,17 +326,20 @@ private:
      *  @brief Load the 2D gaps that go with the chosen geometry
      *
      *  @param listOfGaps the output list of 2D gaps.
+     *  @param useActiveBoundingBox when true use ActiveBoundingBox instead of the default midpoint. Meant to handle offsets and things in a better way.
      */
-    static void LoadDetectorGaps(LArDetectorGapList& listOfGaps);
+    static void LoadDetectorGaps(LArDetectorGapList& listOfGaps, const bool useActiveBoundingBox);
 
     /**
      *  @brief Load drift volume geometry
      *
      *  @param outputVolumeList the output list of drift volumes
      *  @param outputVolumeMap the output mapping between cryostat/tpc and drift volumes
+     *  @param useActiveBoundingBox when true use ActiveBoundingBox instead of the default midpoint. Meant to handle offsets and things in a better way.
      */
     static void LoadGeometry(LArDriftVolumeList& outputVolumeList,
-                             LArDriftVolumeMap& outputVolumeMap);
+                             LArDriftVolumeMap& outputVolumeMap,
+                             const bool useActiveBoundingBox);
 
     /**
      *  @brief  Get drift volume ID from a specified cryostat/tpc pair
@@ -395,8 +403,9 @@ private:
      *          common range of X coordinates, and common detector parameters such as wire pitch and wire angle).
      *
      *  @param  driftVolumeList to receive the populated drift volume list
+     *  @param  useActiveBoundingBox when true use ActiveBoundingBox instead of the default midpoint. Meant to handle offsets and things in a better way.
      */
-    static void LoadGeometry(LArDriftVolumeList& driftVolumeList);
+    static void LoadGeometry(LArDriftVolumeList& driftVolumeList, const bool useActiveBoundingBox);
 
     /**
      *  @brief  This method will create one or more daughter volumes (these share a common drift orientation along the X-axis,
@@ -480,12 +489,22 @@ private:
   //------------------------------------------------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------------------------------------------------
 
-  inline LArDaughterDriftVolume::LArDaughterDriftVolume(const unsigned int cryostat, const unsigned int tpc,
-                                                        const float centerX, const float centerY, const float centerZ,
-                                                        const float widthX, const float widthY, const float widthZ) :
-      m_cryostat(cryostat), m_tpc(tpc),
-      m_centerX(centerX), m_centerY(centerY), m_centerZ(centerZ),
-      m_widthX(widthX), m_widthY(widthY), m_widthZ(widthZ)      
+  inline LArDaughterDriftVolume::LArDaughterDriftVolume(const unsigned int cryostat,
+                                                        const unsigned int tpc,
+                                                        const float centerX,
+                                                        const float centerY,
+                                                        const float centerZ,
+                                                        const float widthX,
+                                                        const float widthY,
+                                                        const float widthZ)
+    : m_cryostat(cryostat)
+    , m_tpc(tpc)
+    , m_centerX(centerX)
+    , m_centerY(centerY)
+    , m_centerZ(centerZ)
+    , m_widthX(widthX)
+    , m_widthY(widthY)
+    , m_widthZ(widthZ)
   {}
 
   //------------------------------------------------------------------------------------------------------------------------------------------
@@ -541,7 +560,7 @@ private:
   inline float
   LArDaughterDriftVolume::GetWidthY() const
   {
-      return m_widthY;
+    return m_widthY;
   }
 
   //------------------------------------------------------------------------------------------------------------------------------------------
