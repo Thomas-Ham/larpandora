@@ -17,6 +17,7 @@ art_make(LIB_LIBRARIES
   larsim_MCCheater_BackTrackerService_service
   larsim_MCCheater_ParticleInventoryService_service
   lardataalg_DetectorInfo
+  nug4_ParticleNavigation
   )
 
 install_headers()

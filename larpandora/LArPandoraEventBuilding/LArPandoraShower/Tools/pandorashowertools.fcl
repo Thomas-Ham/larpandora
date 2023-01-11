@@ -48,6 +48,48 @@ showernumelectronsenergy:{
      ShowerBestPlaneOutputLabel: "ShowerBestPlane"
  }
 
+showerrecoenergyfromnumelectrons:{
+     tool_type:  ShowerRecoEnergyfromNumElectrons
+     BaseTools: @local::showerbasetools
+     CalorimetryAlg: @nil
+     RecombinationFactor: 0.64
+     # PFParticleLabel: "pandora"
+     ShowerEnergyOutputLabel: "ShowerEnergy"
+     ShowerBestPlaneOutputLabel: "ShowerBestPlane"
+ }
+
+showerestarenergy:{
+     tool_type:  ShowerESTAREnergy
+     BaseTools: @local::showerbasetools
+     CalorimetryAlg: @nil
+     # PFParticleLabel: "pandora"
+     ShowerEnergyOutputLabel: "ShowerEnergy"
+     ShowerBestPlaneOutputLabel: "ShowerBestPlane"
+     SCECorrectEField: false
+     ESTARFname: @nil
+     ESTARTGraph: @nil
+}
+
+myshowerestarenergy:{
+     tool_type:  myShowerESTAREnergy
+     BaseTools: @local::showerbasetools
+     CalorimetryAlg: @nil
+     # PFParticleLabel: "pandora"
+     ShowerEnergyOutputLabel: "ShowerEnergy"
+     ShowerBestPlaneOutputLabel: "ShowerBestPlane"
+     SCECorrectEField: false
+     ESTARFname: @nil
+     ESTARTGraph: @nil
+}
+
+showerenergycheater:{                                                                                                                                                                   
+    tool_type:               ShowerEnergyCheater                                                                                                                                        
+    BaseTools:           @local::showerbasetools                                                                                                                                        
+    LArPandoraShowerCheatingAlg:    @local::standard_larpandorashowercheatingalg
+    PFParticleModuleLabel:  "pandora"                                                                                                                                                   
+    HitModuleLabel:         "linecluster"                                                                                                                                               
+    ShowerModuleLabel:       "pandoraShower" 
+}     
 
 shower2Dlinearregressiontrackhitfinder:{
     tool_type:             Shower2DLinearRegressionTrackHitFinder
